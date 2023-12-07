@@ -31,7 +31,6 @@
 
 @import Firebase;
 @import FirebaseCore;
-@import FirebaseInstanceID;
 @import FirebaseMessaging;
 
 @implementation PushPlugin : CDVPlugin
@@ -55,15 +54,15 @@
 
 -(void)initRegistration;
 {
-    [[FIRInstanceID instanceID] instanceIDWithHandler:^(FIRInstanceIDResult * _Nullable result, NSError * _Nullable error) {
+    [[FIRMessaging messaging] tokenWithCompletion:^(NSString *token, NSError *error) {
         if (error != nil) {
-            NSLog(@"Error fetching remote instance ID: %@", error);
+            NSLog(@"Error getting FCM registration token: %@", error);
         } else {
-            NSLog(@"Remote instance ID (FCM Registration) Token: %@", result.token);
+            NSLog(@"FCM registration token: %@", token);
 
-            [self setFcmRegistrationToken: result.token];
+            [self setFcmRegistrationToken: token];
 
-            NSString* message = [NSString stringWithFormat:@"Remote InstanceID token: %@", result.token];
+            NSString* message = [NSString stringWithFormat:@"Remote InstanceID token: %@", token];
 
             id topics = [self fcmTopics];
             if (topics != nil) {
@@ -74,7 +73,7 @@
                 }
             }
 
-            [self registerWithToken:result.token];
+            [self registerWithToken: token];
         }
     }];
 }
@@ -178,20 +177,8 @@
     } else {
         NSLog(@"Push Plugin VoIP missing or false");
         [[NSNotificationCenter defaultCenter]
-         addObserver:self selector:@selector(onTokenRefresh)
-         name:kFIRInstanceIDTokenRefreshNotification object:nil];
-
-        // [[NSNotificationCenter defaultCenter]
-        //  addObserver:self selector:@selector(sendDataMessageFailure:)
-        //  name:FIRMessagingSendErrorNotification object:nil];
-
-        // [[NSNotificationCenter defaultCenter]
-        //  addObserver:self selector:@selector(sendDataMessageSuccess:)
-        //  name:FIRMessagingSendSuccessNotification object:nil];
-
-        // [[NSNotificationCenter defaultCenter]
-        //  addObserver:self selector:@selector(didDeleteMessagesOnServer)
-        //  name:FIRMessagingMessagesDeletedNotification object:nil];
+          addObserver:self selector:@selector(onTokenRefresh)
+          name:FIRMessagingRegistrationTokenRefreshedNotification object:nil];
 
         [self.commandDelegate runInBackground:^ {
             NSLog(@"Push Plugin register called");
